@@ -1,0 +1,9 @@
+stocks:
+  - ticker: KO
+    profile: dividend-stock
+
+  - ticker: NVDA
+    profile: growth-stock
+
+  - ticker: MSFT
+    profile: growth-stock
