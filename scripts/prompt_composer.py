@@ -1,5 +1,6 @@
 import os
 import wx
+import traceback
 from openai import OpenAI
 
 
@@ -13,7 +14,8 @@ class MainFrame(wx.Frame):
         )
 
         self.client = OpenAI(
-            api_key=os.environ.get("OPENAI_API_KEY")
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            timeout=300
         )
 
         self.attachment_paths = []
@@ -372,13 +374,14 @@ class MainFrame(wx.Frame):
             )
 
         except Exception as ex:
-
+            error_text = traceback.format_exc()
+            print(error_text)
+            self.log_msg(error_text)
             wx.MessageBox(
-                str(ex),
+                error_text,
                 "Błąd",
                 wx.OK | wx.ICON_ERROR
             )
-
 
 class App(wx.App):
 

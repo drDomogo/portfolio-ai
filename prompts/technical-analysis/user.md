@@ -1,12 +1,15 @@
-Jesteś doświadczonym analitykiem rynku kapitałowego.
-Przeprowadź analizę spółki:
+Przeanalizuj załączoną spółkę na podstawie dostarczonego pliku:
 
-Ticker: {{ticker}}
+- price_history.csv
 
-Przygotuj:
 
-1. Trend długoterminowy
-2. Kluczowe poziomy wsparcia i oporu
-3. Sytuację techniczną
-4. Główne ryzyka
-5. Wniosek końcowy
+Przeprowadź analizę techniczną.
+
+
+Analiza techniczna
+Na podstawie price_history.csv:
+- określ trend krótkoterminowy i długoterminowy,
+- oceń relację ceny do SMA50 i SMA200,
+- wskaż istotne poziomy wsparcia i oporu,
+- oceń czy obecny moment sprzyja zakupowi.
+
