@@ -5,7 +5,7 @@ import pandas as pd
 import yfinance as yf
 
 # Importujemy potrzebne funkcje i zmienne z Twojego poprzedniego modułu
-from StockResearchAutomate import (
+from stock_research_automate import (
     OUTPUT_DIR,
     process_ticker,  # Przetwarza pełny pakiet (JSON + 2 Wykresy)
     create_technical_chart  # Generuje TYLKO analizę techniczną (CSV + Wykres)
@@ -51,7 +51,8 @@ def load_tickers_from_excel(excel_path, sheet_name, column_name):
                 return []
 
         # Pobranie unikalnych, niepustych wartości, oczyszczonych ze spacji
-        tickers = df[column_name].dropna().astype(str).str.strip().unique().tolist()
+        #tickers = df[column_name].dropna().astype(str).str.strip().unique().tolist()
+        tickers = df[column_name].dropna().astype(str).str.strip().str.upper().unique().tolist()
         return tickers
 
     except Exception as e:

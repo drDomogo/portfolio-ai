@@ -18,7 +18,7 @@ TICKERS = [
     "WWD",
 ]
 
-# Path(__file__).resolve() to ścieżka do StockResearchAutomate.py (w folderze scripts)
+# Path(__file__).resolve() to ścieżka do stock_research_automate.py (w folderze scripts)
 # .parent to folder 'scripts', a kolejny .parent to główny folder 'portfolio-ai'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
