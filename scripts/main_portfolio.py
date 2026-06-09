@@ -25,7 +25,7 @@ SHEET_NAME = "assets"  # Nazwa zakładki
 TICKER_COLUMN = "ticker"  # Nazwa kolumny z tickerami w Excelu
 
 # Listy klasyfikacji aktywów
-TECH_ONLY_TICKERS = ["GC=F", "BTC-USD", "SOL-USD"]
+TECH_ONLY_TICKERS = ["EIMI.L", "IWDA.L", "UDVD.L", "GC=F", "BTC-USD", "SOL-USD"]
 IGNORE_TICKERS = ["none", "RNDR-USD", "USDPLN=X", "EURPLN=X", "IB01.L"]
 
 
