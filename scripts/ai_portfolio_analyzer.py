@@ -6,6 +6,7 @@ from datetime import datetime
 from google import genai
 from google.genai import types
 from google.genai import errors
+from schemas import PortfolioAnalysisReport
 
 # Reużywamy konfiguracji i funkcji ładowania tickerów z istniejącego modułu
 from main_portfolio import (
@@ -123,11 +124,15 @@ def run_ai_analysis():
             # Na końcu dodajemy właściwe zapytanie użytkownika
             contents.append(user_prompt)
 
-            # Konfiguracja parametrów generowania (w tym opcjonalny limit tokenów)
+            # Konfiguracja parametrów generowania z wymuszeniem struktury JSON
             config_params = {
                 "system_instruction": system_prompt,
-                "temperature": 0.2
+                "temperature": 0.2,
+                "response_mime_type": "application/json",
+                "response_schema": PortfolioAnalysisReport,  # Podajemy naszą klasę Pydantic
             }
+            if MAX_OUTPUT_TOKENS is not None:
+                config_params["max_output_tokens"] = MAX_OUTPUT_TOKENS
             if MAX_OUTPUT_TOKENS is not None:
                 config_params["max_output_tokens"] = MAX_OUTPUT_TOKENS
 
@@ -157,14 +162,18 @@ def run_ai_analysis():
             if not ai_response_text:
                 raise Exception("Nie udało się uzyskać odpowiedzi z modelu Gemini.")
 
-            # 3. Zapis raportu tekstowego w folderze spółki
-            output_filename = f"ai-comment-{today_str}.txt"
+            # 3. Zapis raportu w formacie JSON w folderze spółki
+            output_filename = f"ai-comment-{today_str}.json"  # Zmiana rozszerzenia na .json
             output_file_path = company_dir / output_filename
 
-            with open(output_file_path, "w", encoding="utf-8") as out_f:
-                out_f.write(ai_response_text)
+            # Wczytujemy tekst odpowiedzi i zapisujemy jako sformatowany JSON (z wcięciami)
+            import json
+            json_data = json.loads(ai_response_text)
 
-            print(f" SUCCESS: Raport zapisany w: {output_file_path.relative_to(BASE_DIR)}")
+            with open(output_file_path, "w", encoding="utf-8") as out_f:
+                json.dump(json_data, out_f, ensure_ascii=False, indent=4)
+
+            print(f" SUCCESS: Raport JSON zapisany w: {output_file_path.relative_to(BASE_DIR)}")
 
         except Exception as ex:
             print(f" ERROR podczas przetwarzania {symbol_upper}: {ex}")
