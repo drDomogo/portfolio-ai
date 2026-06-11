@@ -1,56 +1,55 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
+from pydantic import BaseModel, Field
 
 
-# Definicja podstruktury dla Karty Wyników (Scorecard)
 class ScorecardItem(BaseModel):
-    criterion: str = Field(description="Nazwa kryterium, np. 'Przychody i Marże', 'Trend Techniczny'")
+    criterion: str = Field(description="Nazwa kryterium oceny (np. Bilans, Marże, Trend)")
     score: int = Field(description="Ocena w skali 1-10")
-    reason: str = Field(description="Kluczowy powód oceny, maksymalnie 5 słów")
+    reason: str = Field(description="Zwięzłe uzasadnienie przyznanej oceny")
 
 
-# Główna struktura raportu JSON, którą musi zwrócić Gemini
 class PortfolioAnalysisReport(BaseModel):
-    ticker: str
-    analysis_date: str = Field(description="Data analizy w formacie YYYY-MM-DD")
-    current_price: float
-    currency: str
+    ticker: str = Field(description="Symbol giełdowy spółki, np. KRU.WA, Apple itp.")
+    short_name: str = Field(
+        description="Pełna lub skrócona czytelna nazwa firmy/instrumentu, np. Kruk, Microsoft, Bitcoin")
+    analysis_date: str = Field(description="Data przeprowadzenia analizy w formacie YYYY-MM-DD")
+    current_price: float = Field(description="Aktualny kurs zamknięcia instrumentu")
+    currency: str = Field(description="Waluta notowania, np. PLN, USD, EUR")
 
-    # Sekcja 1: Fundamenty
-    revenue_and_eps_trend: str = Field(
-        description="Max 2 zdania: trend średnioterminowy, dynamika CAGR/r-r, ocena stabilności trendu")
-    fcf_and_operations: str = Field(
-        description="Max 2 zdania: zdolność do generowania gotówki, relacja FCF do zysku netto")
-    balance_sheet_debt: str = Field(description="Max 1 zdanie: ocena dźwigni finansowej i poziomu bezpieczeństwa")
-    dividend_policy: str = Field(description="Max 1 zdanie: czy dywidenda jest bezpieczna i pokryta zyskami/FCF")
+    # Pola fundamentalne dopuszczające None (dla TECH_ONLY)
+    revenue_and_eps_trend: Optional[str] = Field(None,
+                                                 description="Analiza trendu przychodów i zysków netto. Wstaw null, jeśli brak danych fundamentalnych.")
+    fcf_and_operations: Optional[str] = Field(None,
+                                              description="Analiza wolnych przepływów pieniężnych i operacji. Wstaw null, jeśli brak danych fundamentalnych.")
+    balance_sheet_debt: Optional[str] = Field(None,
+                                              description="Analiza bilansu i poziomu zadłużenia. Wstaw null, jeśli brak danych fundamentalnych.")
+    dividend_policy: Optional[str] = Field(None,
+                                           description="Analiza historii i polityki dywidendowej. Wstaw null, jeśli brak danych danych fundamentalnych.")
 
-    # Sekcja 2 & 3: Oczekiwania i Wycena
-    market_expectations: str = Field(
-        description="Max 2 zdania: Jaki % prognoz EPS spółka pobija? Czy regularnie dowozi wyniki?")
-    valuation_status: str = Field(
-        description="Status wyceny: Tania, Uczciwa lub Droga względem historycznego tempa wzrostu")
-    key_valuation_metrics: str = Field(
-        description="Max 2 zdania syntetyzujące wskaźniki P/E, P/B, ROE oraz poziom zadłużenia")
+    market_expectations: Optional[str] = Field(None,
+                                               description="Realizacja oczekiwań rynkowych i zaskoczenia wynikami. Wstaw null, jeśli brak danych.")
+    valuation_status: str = Field(description="Ocena wyceny: Tania, Fair Value, Droga, Bardzo Droga")
+    key_valuation_metrics: str = Field(description="Kluczowe wskaźniki użyte do oceny, np. P/E, P/B, EV/EBITDA")
 
-    # Sekcja 4: Poziomy cenowe
-    price_strong_opportunity: float = Field(description="Cena stanowiąca mocną okazję (bardzo atrakcyjna)")
-    price_attractive: float = Field(description="Cena atrakcyjna")
-    price_fair_value: float = Field(description="Cena uczciwa (Fair Value)")
-    price_overvalued: float = Field(description="Cena przewartościowana")
+    # Poziomy cenowe
+    price_strong_opportunity: float = Field(
+        description="Poziom ceny oznaczający silną okazję inwestycyjną (Mocna Okazja)")
+    price_attractive: float = Field(description="Cena atrakcyjna do zakupu (Cena Atrakcyjna)")
+    price_fair_value: float = Field(description="Wycena godziwa (Fair Value)")
+    price_overvalued: float = Field(description="Poziom wyraźnego przewartościowania (Drogo)")
     price_valuation_justification: str = Field(
-        description="Krótkie uzasadnienie matematyczne/wskaźnikowe dla wyznaczonych poziomów")
+        description="Matematyczne i rynkowe uzasadnienie wyznaczonych poziomów cenowych")
 
-    # Sekcja 5: Analiza Techniczna
-    trend_short_term: str = Field(description="Trend krótkoterminowy, np. Spadkowy, Wzrostowy, Konsolidacja")
-    trend_long_term: str = Field(description="Trend długoterminowy")
-    position_vs_sma50: str = Field(description="Pozycja ceny względem średniej SMA50: 'nad' lub 'pod'")
-    position_vs_sma200: str = Field(description="Pozycja ceny względem średniej SMA200: 'nad' lub 'pod'")
-    support_level: float = Field(description="Istotny poziom wsparcia cenowego")
-    resistance_level: float = Field(description="Istotny poziom oporu cenowego")
-    momentum_summary: str = Field(
-        description="1 zdanie: czy obecny moment na bazie wykresu/historii cen sprzyja akumulacji")
+    # Analiza techniczna
+    trend_short_term: str = Field(description="Krótkoterminowy trend: Spadkowy, Wzrostowy, Boczny")
+    trend_long_term: str = Field(description="Długoterminowy trend: Spadkowy, Wzrostowy, Boczny")
+    position_vs_sma50: str = Field(description="Pozycja ceny względem SMA50: nad, pod, na poziomie")
+    position_vs_sma200: str = Field(description="Pozycja ceny względem SMA200: nad, pod, na poziomie")
+    support_level: float = Field(description="Najbliższy istotny poziom wsparcia technicznego")
+    resistance_level: float = Field(description="Najbliższy istotny poziom oporu technycznego")
+    momentum_summary: str = Field(description="Podsumowanie momentum i zachowania wskaźników technicznych")
 
-    # Sekcja 6: Scorecard i Werdykt
-    scorecard: List[ScorecardItem]
-    final_verdict: str = Field(description="Jedno słowo: AKUMULUJ, TRZYMAJ, REDUKUJ lub SPRZEDAJ")
-    main_risk: str = Field(description="Zdefiniuj 1 najważniejsze ryzyko dla spółki w maksymalnie 10 słowach")
+    # Podsumowanie końcowe
+    scorecard: List[ScorecardItem] = Field(description="Lista obiektów ocen cząstkowych dla kluczowych kryteriów")
+    final_verdict: str = Field(description="Ostateczny werdykt: AKUMULUJ, TRZYMAJ, REDUKUJ, SPRZEDAJ")
+    main_risk: str = Field(description="Główne zidentyfikowane ryzyko dla tej inwestycji")

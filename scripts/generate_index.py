@@ -18,22 +18,21 @@ def build_portfolio_index():
     for company_dir in ANALYSIS_DIR.iterdir():
         if company_dir.is_dir():
             ticker = company_dir.name
-            # Szukamy najnowszego pliku ai-comment-*.json
-            json_files = sorted(list(company_dir.glob("ai-comment-*.json")))
+            # Definiujemy bezpośrednią ścieżkę do stałego pliku JSON
+            json_file = company_dir / "ai-comment.json"
 
-            if json_files:
-                latest_json = json_files[-1]  # Bierzemy najnowszy raport
+            if json_file.exists():
                 try:
-                    with open(latest_json, "r", encoding="utf-8") as f:
+                    with open(json_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
 
-                    # Wyciągamy podstawowe dane do budowy listy startowej
                     portfolio_index.append({
                         "ticker": ticker,
+                        "short_name": data.get("short_name", ticker),
                         "verdict": data.get("final_verdict", "TRZYMAJ"),
                         "price": data.get("current_price", "--"),
                         "currency": data.get("currency", ""),
-                        "filePath": f"analysis/{ticker}/{latest_json.name}",
+                        "filePath": f"analysis/{ticker}/company_data.json",
                         "folderPath": f"analysis/{ticker}"
                     })
                     print(f"Zindeksowano: {ticker}")

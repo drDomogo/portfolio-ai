@@ -163,7 +163,7 @@ def run_ai_analysis():
                 raise Exception("Nie udało się uzyskać odpowiedzi z modelu Gemini.")
 
             # 3. Zapis raportu w formacie JSON w folderze spółki
-            output_filename = f"ai-comment-{today_str}.json"  # Zmiana rozszerzenia na .json
+            output_filename = f"ai-comment.json"
             output_file_path = company_dir / output_filename
 
             # Wczytujemy tekst odpowiedzi i zapisujemy jako sformatowany JSON (z wcięciami)
