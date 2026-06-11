@@ -32,7 +32,7 @@ def build_portfolio_index():
                         "verdict": data.get("final_verdict", "TRZYMAJ"),
                         "price": data.get("current_price", "--"),
                         "currency": data.get("currency", ""),
-                        "filePath": f"analysis/{ticker}/company_data.json",
+                        "filePath": f"analysis/{ticker}/ai-comment.json",
                         "folderPath": f"analysis/{ticker}"
                     })
                     print(f"Zindeksowano: {ticker}")
