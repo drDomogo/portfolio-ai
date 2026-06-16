@@ -184,7 +184,7 @@ def run_ai_analysis():
 
             json_data = response.text  # zakładam, że to już string JSON
 
-            output_file_path = company_dir / f"ai-comment_{today_str}.json"
+            output_file_path = company_dir / f"ai-comment.json"
 
             import json
             with open(output_file_path, "w", encoding="utf-8") as f:
