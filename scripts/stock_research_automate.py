@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import random
 import time
+import matplotlib
+matplotlib.use('Agg')          # <<< WAŻNE - zapobiega crashowi z wxPython
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -18,12 +20,8 @@ TICKERS = [
     "WWD",
 ]
 
-# Path(__file__).resolve() to ścieżka do stock_research_automate.py (w folderze scripts)
-# .parent to folder 'scripts', a kolejny .parent to główny folder 'portfolio-ai'
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Teraz bezpiecznie budujemy ścieżkę względną do folderu z wynikami
-OUTPUT_DIR = BASE_DIR / "analysis"
+OUTPUT_DIR = BASE_DIR / "analysis"          # domyślny folder (dla wstecznej kompatybilności)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -32,9 +30,6 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # =====================================================
 
 def get_value(df, possible_names, column):
-    """
-    Pobiera wartość z DataFrame po jednej z możliwych nazw wiersza.
-    """
     if df is None or df.empty:
         return None
 
@@ -44,57 +39,39 @@ def get_value(df, possible_names, column):
     for name in possible_names:
         try:
             if name in df.index:
-                # Zamiana na natywny typ Pythona (np. float), bo np.int64 nie zapisze się w JSON
                 val = df.loc[name, column]
                 if pd.isna(val):
                     return None
-                if hasattr(val, "item"):
-                    return val.item()
-                return val
+                return val.item() if hasattr(val, "item") else val
         except Exception:
             pass
-
     return None
 
 
 # =====================================================
-# ANALIZA TECHNICZNA (GENERUJE WYKRES i HISTORIĘ CEN)
+# ANALIZA TECHNICZNA
 # =====================================================
 
 def create_technical_chart(ticker_obj, output_dir):
     hist = ticker_obj.history(period="1y")
-
     if hist.empty:
         print("Brak danych historycznych")
         return
 
-    try:
-        currency = ticker_obj.info.get("currency", "N/A")
-    except Exception:
-        currency = "N/A"
-
+    currency = ticker_obj.info.get("currency", "N/A")
     ticker_name = ticker_obj.ticker
 
     hist["SMA50"] = hist["Close"].rolling(50).mean()
     hist["SMA200"] = hist["Close"].rolling(200).mean()
 
-    # Zostawiamy zapis cen jako CSV (AI zazwyczaj woli agregaty w JSON, a wykres potrzebuje pliku)
     hist.to_csv(output_dir / "price_history.csv")
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(14, 9), height_ratios=[3, 1], sharex=True
-    )
-
-    fig.suptitle(
-        f"Analiza Techniczna: {ticker_name} ({currency})",
-        fontsize=16,
-        fontweight="bold",
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 9), height_ratios=[3, 1], sharex=True)
+    fig.suptitle(f"Analiza Techniczna: {ticker_name} ({currency})", fontsize=16, fontweight="bold")
 
     ax1.plot(hist.index, hist["Close"], label="Close")
     ax1.plot(hist.index, hist["SMA50"], label="SMA50")
     ax1.plot(hist.index, hist["SMA200"], label="SMA200")
-
     ax1.set_title("Price + SMA50 + SMA200")
     ax1.legend()
     ax1.grid(True)
@@ -586,71 +563,80 @@ def create_earnings_surprise_chart(ticker_obj, output_dir):
 # PRZETWARZANIE SPÓŁKI
 # =====================================================
 
-def process_ticker(symbol):
+def process_ticker(symbol, output_dir=None):
+    """
+    Przetwarza spółkę i zapisuje wyniki do podanego folderu.
+    Jeśli output_dir=None → używa globalnego OUTPUT_DIR (stare zachowanie).
+    """
     print(f"Przetwarzam {symbol}")
 
     ticker = yf.Ticker(symbol)
-    company_dir = OUTPUT_DIR / symbol
+
+    # Określenie folderu docelowego
+    if output_dir is None:
+        company_dir = OUTPUT_DIR / symbol
+    else:
+        company_dir = Path(output_dir) / symbol
+
     company_dir.mkdir(parents=True, exist_ok=True)
 
-    # Inicjalizacja głównego słownika, do którego wpadną wszystkie pod-pakiety danych
-    combined_data = {"ticker": symbol, "generated_at": str(pd.Timestamp.now())}
+    # Główny słownik danych
+    combined_data = {
+        "ticker": symbol,
+        "generated_at": str(pd.Timestamp.now())
+    }
 
-    # 1. Wykres techniczny i historia cen (zostaje jako CSV i PNG)
+    # 1. Wykres techniczny + historia cen
     try:
         create_technical_chart(ticker, company_dir)
     except Exception as e:
         print(f"Błąd technical_chart {symbol}: {e}")
 
-    # 2. Zbieranie komponentów do jednego JSONa
+    # 2. Dane do JSONa
     try:
         combined_data["current_snapshot"] = get_current_snapshot(ticker)
     except Exception as e:
-        print(f"Błąd pobierania snapshotu dla {symbol}: {e}")
+        print(f"Błąd snapshot {symbol}: {e}")
         combined_data["current_snapshot"] = {}
 
     try:
-        combined_data["quarterly_fundamentals"] = get_quarterly_fundamentals(
-            ticker
-        )
+        combined_data["quarterly_fundamentals"] = get_quarterly_fundamentals(ticker)
     except Exception as e:
-        print(f"Błąd pobierania danych kwartalnych dla {symbol}: {e}")
+        print(f"Błąd quarterly {symbol}: {e}")
         combined_data["quarterly_fundamentals"] = []
 
     try:
         combined_data["annual_fundamentals"] = get_annual_fundamentals(ticker)
     except Exception as e:
-        print(f"Błąd pobierania danych rocznych dla {symbol}: {e}")
+        print(f"Błąd annual {symbol}: {e}")
         combined_data["annual_fundamentals"] = []
 
     try:
         combined_data["earnings_surprises"] = get_earnings_surprises(ticker)
     except Exception as e:
-        print(f"Błąd pobierania earnings_surprises dla {symbol}: {e}")
+        print(f"Błąd earnings_surprises {symbol}: {e}")
         combined_data["earnings_surprises"] = []
 
-    # 3. Zapis skonsolidowanego pliku JSON
+    # 3. Zapis JSON
     json_path = company_dir / "company_data.json"
     try:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(combined_data, f, ensure_ascii=False, indent=4)
-        print(f"Zapisano skonsolidowany plik JSON: {json_path}")
+        print(f"✓ Zapisano JSON: {json_path}")
     except Exception as e:
-        print(f"Błąd zapisu pliku JSON dla {symbol}: {e}")
+        print(f"Błąd zapisu JSON {symbol}: {e}")
 
-    # 4. Wykres fundamentalny (zostaje jako PNG dla Ciebie)
+    # 4. Pozostałe wykresy
     try:
         create_fundamental_chart(ticker, company_dir)
     except Exception as e:
         print(f"Błąd fundamental_chart {symbol}: {e}")
 
-    # 5. Wykres dywidend
     try:
         create_dividend_chart(ticker, company_dir)
     except Exception as e:
         print(f"Błąd dividend_chart {symbol}: {e}")
 
-    # 6. Wykres rozbieżności zysków (Surprise)
     try:
         create_earnings_surprise_chart(ticker, company_dir)
     except Exception as e:
